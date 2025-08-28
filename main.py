@@ -8,6 +8,13 @@ def get_html(base_url, page_num):
         }
 
     response = httpx.get(base_url + "/catalogue/page-" + str(page_num) + ".html", headers=headers, follow_redirects=True) 
+    # print(response.status_code)
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        print(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.Page limit exceeded")
+        return False #returns false if page limit exceeded
     # print(response.text) #text of url request
     html = HTMLParser(response.text) # query this to find data you want
     return html
@@ -38,8 +45,9 @@ def extract_rating(html, selector):
 
 def parse_page(html):
     books = html.css("article.product_pod") #target all books
-    #print(books)
-    book_list = []
+   
+    # book_list = []
+    
     # loop through books and print title
     for book in books: 
         # print(book.css_first("h3 > a").text())
@@ -52,16 +60,20 @@ def parse_page(html):
             "url": extract_text(book, "h3 > a", "href")
         }
         # print(item)
-        book_list.append(item)
-    return book_list # returns list of dictionaries for use later
+    #     book_list.append(item)
+    # return book_list # returns list of dictionaries for use later
+        yield item #gives generator object to main function 
 
 def main():
     base_url = "https://books.toscrape.com"
-    for i in range(1, 10): #page 1 to 9
+    for i in range(50, 100): 
         print(i)
         html = get_html(base_url, i)
+        if html is False:
+            break
         book_data = parse_page(html)
-        print(book_data)
+        for item in book_data:
+            print(item) #print each item in book_data one by one
 
 if __name__ == "__main__":
     main()
