@@ -22,6 +22,21 @@ def extract_text(html, selector, attribute=None):
             return html.css_first(selector).text()
     except AttributeError:
         return None
+
+# function to get rating class
+def extract_rating(html, selector):
+    try:
+        element = html.css_first(selector)
+        class_attr = element.attributes.get('class')
+        # print(class_attr, ">>>>>CLASS ATTR")
+        
+        if len(class_attr.split()) == 2: 
+            return class_attr.split()[1]
+        else:
+            return None
+    except AttributeError:
+        return None
+
 books = html.css("article.product_pod") #target all books
 # print(books)
 
@@ -33,7 +48,7 @@ for book in books:
     item = {
         "name": extract_text(book, "h3 > a"),
         "price": extract_text(book, "p.price_color"),
-        "rating": extract_text(book, "p.star-rating"),
+        "rating": extract_rating(book, "p.star-rating"),
         "url": extract_text(book, "h3 > a", "href")
     }
     print(item)
