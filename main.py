@@ -14,4 +14,9 @@ html = HTMLParser(response.text) # query this to find data you want
 print(html.css_first("title").text()) #finds first css selector matching title
 
 books = html.css("article.product_pod") #target all books
-print(books)
+# print(books)
+
+# loop through books and print title
+for book in books: 
+    print(book.css_first("h3 > a").text())
+
