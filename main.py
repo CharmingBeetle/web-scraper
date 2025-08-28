@@ -1,5 +1,6 @@
 import httpx 
 from selectolax.parser import HTMLParser
+import time
 
 # web scraper tutorial
 def get_html(base_url, page_num):
@@ -66,14 +67,16 @@ def parse_page(html):
 
 def main():
     base_url = "https://books.toscrape.com"
-    for i in range(50, 100): 
-        print(i)
+    for i in range(40, 52): 
+        print(f"Gathering data from page {i}")
         html = get_html(base_url, i)
+        time.sleep(1)
         if html is False:
             break
         book_data = parse_page(html)
         for item in book_data:
             print(item) #print each item in book_data one by one
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
