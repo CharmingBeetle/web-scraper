@@ -38,8 +38,8 @@ def extract_rating(html, selector):
 
 def parse_page(html):
     books = html.css("article.product_pod") #target all books
-    print(books)
-    
+    #print(books)
+    book_list = []
     # loop through books and print title
     for book in books: 
         # print(book.css_first("h3 > a").text())
@@ -51,14 +51,17 @@ def parse_page(html):
             "rating": extract_rating(book, "p.star-rating"),
             "url": extract_text(book, "h3 > a", "href")
         }
-        print(item)
+        # print(item)
+        book_list.append(item)
+    return book_list # returns list of dictionaries for use later
 
 def main():
     base_url = "https://books.toscrape.com"
     for i in range(1, 10): #page 1 to 9
         print(i)
         html = get_html(base_url, i)
-        parse_page(html)
+        book_data = parse_page(html)
+        print(book_data)
 
 if __name__ == "__main__":
     main()
