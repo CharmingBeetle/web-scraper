@@ -55,8 +55,10 @@ def parse_page(html):
 
 def main():
     base_url = "https://books.toscrape.com"
-    html = get_html(base_url, 6)
-    parse_page(html)
+    for i in range(1, 10): #page 1 to 9
+        print(i)
+        html = get_html(base_url, i)
+        parse_page(html)
 
 if __name__ == "__main__":
     main()
