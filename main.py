@@ -13,6 +13,15 @@ html = HTMLParser(response.text) # query this to find data you want
 
 # print(html.css_first("title").text()) #finds first css selector matching title
 
+# function to extract text, if no text, return none
+def extract_text(html, selector, attribute=None):
+    try:
+        if attribute: 
+            return html.css_first(selector).attributes[attribute]
+        else:
+            return html.css_first(selector).text()
+    except AttributeError:
+        return None
 books = html.css("article.product_pod") #target all books
 # print(books)
 
@@ -22,9 +31,9 @@ for book in books:
 
   #create item dictionary
     item = {
-        "name": html.css_first("h3 > a").text(),
-        "price": html.css_first("p.price_color").text(),
-        "rating": html.css_first("p.star-rating").text(),
-        "url": html.css_first("h3 > a").attributes["href"]
+        "name": extract_text(book, "h3 > a"),
+        "price": extract_text(book, "p.price_color"),
+        "rating": extract_text(book, "p.star-rating"),
+        "url": extract_text(book, "h3 > a", "href")
     }
     print(item)
