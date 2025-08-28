@@ -2,12 +2,12 @@ import httpx
 from selectolax.parser import HTMLParser
 
 # web scraper tutorial
-def get_html(base_url):
+def get_html(base_url, page_num):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
         }
 
-    response = httpx.get(base_url, headers=headers) 
+    response = httpx.get(base_url + "/catalogue/page-" + str(page_num) + ".html", headers=headers, follow_redirects=True) 
     # print(response.text) #text of url request
     html = HTMLParser(response.text) # query this to find data you want
     return html
@@ -54,8 +54,8 @@ def parse_page(html):
         print(item)
 
 def main():
-    base_url = "https://books.toscrape.com/"
-    html = get_html(base_url)
+    base_url = "https://books.toscrape.com"
+    html = get_html(base_url, 6)
     parse_page(html)
 
 if __name__ == "__main__":
