@@ -11,12 +11,20 @@ response = httpx.get(url, headers=headers)
 
 html = HTMLParser(response.text) # query this to find data you want
 
-print(html.css_first("title").text()) #finds first css selector matching title
+# print(html.css_first("title").text()) #finds first css selector matching title
 
 books = html.css("article.product_pod") #target all books
 # print(books)
 
 # loop through books and print title
 for book in books: 
-    print(book.css_first("h3 > a").text())
+    # print(book.css_first("h3 > a").text())
 
+  #create item dictionary
+    item = {
+        "name": html.css_first("h3 > a").text(),
+        "price": html.css_first("p.price_color").text(),
+        "rating": html.css_first("p.star-rating").text(),
+        "url": html.css_first("h3 > a").attributes["href"]
+    }
+    print(item)
