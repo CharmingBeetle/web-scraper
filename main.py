@@ -1,22 +1,35 @@
 import httpx 
 from selectolax.parser import HTMLParser
 import time
+from urllib.parse import urljoin
+from dataclasses import dataclass, asdict
+
+@dataclass
+class Item:
+    title: str | None
+    price: str | None
+    rating: str | None
+    stock: str | None  
+    description: str | None
 
 # web scraper tutorial
-def get_html(base_url, page_num):
+def get_html(url, **kwargs): #keyword arguments is a dictionary
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
         }
-
-    response = httpx.get(base_url + "/catalogue/page-" + str(page_num) + ".html", headers=headers, follow_redirects=True) 
-    # print(response.status_code)
+    
+    if kwargs.get("page_num"):
+        page_url = f"{url}/catalogue/page-{kwargs.get('page_num')}.html"
+        response = httpx.get(page_url, headers=headers, follow_redirects=True)  
+        print(response.status_code)
+    else: 
+        response = httpx.get(url, headers=headers, follow_redirects=True)  
 
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         print(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.Page limit exceeded")
         return False #returns false if page limit exceeded
-    # print(response.text) #text of url request
     html = HTMLParser(response.text) # query this to find data you want
     return html
 
@@ -44,39 +57,54 @@ def extract_rating(html, selector):
     except AttributeError:
         return None
 
-def parse_page(html):
-    books = html.css("article.product_pod") #target all books
-   
-    # book_list = []
-    
-    # loop through books and print title
-    for book in books: 
-        # print(book.css_first("h3 > a").text())
+def extract_stock(html, selector):
+    try:
+        element = html.css_first(selector)
+        if element:
+            stock_text = element.text()
+            start = stock_text.find("(") + 1 #position of number start
+            end = stock_text.find(" available") #position of number end
+            if start > 0 and end > start: 
+                return stock_text[start:end] #value of number position
+            return stock_text
+        return None
+    except AttributeError:
+        return None
 
-        #create item dictionary
-        item = {
-            "name": extract_text(book, "h3 > a"),
-            "price": extract_text(book, "p.price_color"),
-            "rating": extract_rating(book, "p.star-rating"),
-            "url": extract_text(book, "h3 > a", "href")
-        }
-        # print(item)
-    #     book_list.append(item)
-    # return book_list # returns list of dictionaries for use later
-        yield item #gives generator object to main function 
+def parse_results_page(html):
+    books = html.css("article.product_pod") #target all books
+    
+    # loop through books and print urls
+    for book in books: 
+        yield urljoin("https://books.toscrape.com/catalogue/", book.css_first("h3 > a").attributes["href"])
+
+def parse_book_page(html: HTMLParser):
+    new_book = Item(
+        title=extract_text(html, "h1"),
+        price=extract_text(html, "p.price_color"),
+        rating=extract_rating(html, "p.star-rating"),
+        stock=extract_stock(html, "p.instock.availability"),
+        description=extract_text(html, "div#product_description ~ p")
+    )
+    return new_book
 
 def main():
+    books = []
     base_url = "https://books.toscrape.com"
-    for i in range(40, 52): 
-        print(f"Gathering data from page {i}")
-        html = get_html(base_url, i)
-        time.sleep(1)
+    for i in range(2, 3):
+        print(f"Getting urls from page {i}")
+        html = get_html(base_url, page_num=i)
         if html is False:
             break
-        book_data = parse_page(html)
-        for item in book_data:
-            print(item) #print each item in book_data one by one
-        time.sleep(1)
+        book_urls = parse_results_page(html)
+        for url in book_urls:
+            print(url)
+            html = get_html(url)
+            books.append(parse_book_page(html))
+            time.sleep(0.5)
+
+    for book in books:
+        print(asdict(book))
 
 if __name__ == "__main__":
     main()
