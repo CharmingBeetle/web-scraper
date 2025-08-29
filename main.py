@@ -4,20 +4,23 @@ import time
 from urllib.parse import urljoin
 
 # web scraper tutorial
-def get_html(base_url, page_num):
+def get_html(url, **kwargs): #keyword arguments is a dictionary
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
         }
-
-    response = httpx.get(base_url + "/catalogue/page-" + str(page_num) + ".html", headers=headers, follow_redirects=True) 
-    # print(response.status_code)
+    
+    if kwargs.get("page_num"):
+        page_url = f"{url}/catalogue/page-{kwargs.get('page_num')}.html"
+        response = httpx.get(page_url, headers=headers, follow_redirects=True)  
+        print(response.status_code)
+    else: 
+        response = httpx.get(url, headers=headers, follow_redirects=True)  
 
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         print(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.Page limit exceeded")
         return False #returns false if page limit exceeded
-    # print(response.text) #text of url request
     html = HTMLParser(response.text) # query this to find data you want
     return html
 
@@ -47,26 +50,25 @@ def extract_rating(html, selector):
 
 def parse_page(html):
     books = html.css("article.product_pod") #target all books
-   
-    # book_list = []
     
-    # loop through books and print title
+    # loop through books and print urls
     for book in books: 
         yield urljoin("https://books.toscrape.com/catalogue/", book.css_first("h3 > a").attributes["href"])
-        
+
 
 def main():
     base_url = "https://books.toscrape.com"
-    for i in range(1, 2): 
-        print(f"Gathering data from page {i}")
-        html = get_html(base_url, i)
-        time.sleep(1)
+    for i in range(2, 3): #pages 1 and 2
+        print(f"Getting urls from page {i}")
+        html = get_html(base_url, page_num=i)
         if html is False:
             break
-        book_data = parse_page(html)
-        for item in book_data:
-            print(item) #print each item in book_data one by one
-        time.sleep(1)
+        book_urls = parse_page(html)
+        for url in book_urls:
+            print(url)
+            html = get_html(url)
+            print(html.css_first("title").text())
+            time.sleep(1)
 
 if __name__ == "__main__":
     main()
