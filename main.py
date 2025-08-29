@@ -2,6 +2,15 @@ import httpx
 from selectolax.parser import HTMLParser
 import time
 from urllib.parse import urljoin
+from dataclasses import dataclass, asdict
+
+@dataclass
+class Item:
+    title: str | None
+    price: str | None
+    rating: str | None
+    stock: str | None  
+    description: str | None
 
 # web scraper tutorial
 def get_html(url, **kwargs): #keyword arguments is a dictionary
@@ -48,27 +57,54 @@ def extract_rating(html, selector):
     except AttributeError:
         return None
 
-def parse_page(html):
+def extract_stock(html, selector):
+    try:
+        element = html.css_first(selector)
+        if element:
+            stock_text = element.text()
+            start = stock_text.find("(") + 1 #position of number start
+            end = stock_text.find(" available") #position of number end
+            if start > 0 and end > start: 
+                return stock_text[start:end] #value of number position
+            return stock_text
+        return None
+    except AttributeError:
+        return None
+
+def parse_results_page(html):
     books = html.css("article.product_pod") #target all books
     
     # loop through books and print urls
     for book in books: 
         yield urljoin("https://books.toscrape.com/catalogue/", book.css_first("h3 > a").attributes["href"])
 
+def parse_book_page(html: HTMLParser):
+    new_book = Item(
+        title=extract_text(html, "h1"),
+        price=extract_text(html, "p.price_color"),
+        rating=extract_rating(html, "p.star-rating"),
+        stock=extract_stock(html, "p.instock.availability"),
+        description=extract_text(html, "div#product_description ~ p")
+    )
+    return new_book
 
 def main():
+    books = []
     base_url = "https://books.toscrape.com"
-    for i in range(2, 3): #pages 1 and 2
+    for i in range(2, 3):
         print(f"Getting urls from page {i}")
         html = get_html(base_url, page_num=i)
         if html is False:
             break
-        book_urls = parse_page(html)
+        book_urls = parse_results_page(html)
         for url in book_urls:
             print(url)
             html = get_html(url)
-            print(html.css_first("title").text())
-            time.sleep(1)
+            books.append(parse_book_page(html))
+            time.sleep(0.5)
+
+    for book in books:
+        print(asdict(book))
 
 if __name__ == "__main__":
     main()
