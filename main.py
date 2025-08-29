@@ -1,6 +1,7 @@
 import httpx 
 from selectolax.parser import HTMLParser
 import time
+from urllib.parse import urljoin
 
 # web scraper tutorial
 def get_html(base_url, page_num):
@@ -51,23 +52,12 @@ def parse_page(html):
     
     # loop through books and print title
     for book in books: 
-        # print(book.css_first("h3 > a").text())
-
-        #create item dictionary
-        item = {
-            "name": extract_text(book, "h3 > a"),
-            "price": extract_text(book, "p.price_color"),
-            "rating": extract_rating(book, "p.star-rating"),
-            "url": extract_text(book, "h3 > a", "href")
-        }
-        # print(item)
-    #     book_list.append(item)
-    # return book_list # returns list of dictionaries for use later
-        yield item #gives generator object to main function 
+        yield urljoin("https://books.toscrape.com/catalogue/", book.css_first("h3 > a").attributes["href"])
+        
 
 def main():
     base_url = "https://books.toscrape.com"
-    for i in range(40, 52): 
+    for i in range(1, 2): 
         print(f"Gathering data from page {i}")
         html = get_html(base_url, i)
         time.sleep(1)
